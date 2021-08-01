@@ -44,9 +44,9 @@ class Model:
                 return param
         if rank <= 0:
             if torch.cuda.is_available():
-                self.flownet.load_state_dict(convert(torch.load('{}/flownet.pkl'.format(path))))
+                self.flownet.load_state_dict(convert(torch.load('{}/flownet.pkl'.format(path))), False)
             else:
-                self.flownet.load_state_dict(convert(torch.load('{}/flownet.pkl'.format(path), map_location ='cpu')))
+                self.flownet.load_state_dict(convert(torch.load('{}/flownet.pkl'.format(path), map_location ='cpu')), False)
         
     def save_model(self, path, rank=0):
         if rank == 0:

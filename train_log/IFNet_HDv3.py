@@ -74,11 +74,10 @@ class IFNet(nn.Module):
         self.block0 = IFBlock(7+4, c=90)
         self.block1 = IFBlock(7+4, c=90)
         self.block2 = IFBlock(7+4, c=90)
-        self.block_tea = IFBlock(10+4, c=90)
         # self.contextnet = Contextnet()
         # self.unet = Unet()
 
-    def forward(self, x, scale_list=[4, 2, 1], training=False):
+    def forward(self, x, scale_list=[4, 2, 1], training=False, ada_scale=True, ensemble=False):
         if training == False:
             channel = x.shape[1] // 2
             img0 = x[:, :channel]
@@ -88,15 +87,24 @@ class IFNet(nn.Module):
         mask_list = []
         warped_img0 = img0
         warped_img1 = img1
-        flow = (x[:, :4]).detach() * 0
-        mask = (x[:, :1]).detach() * 0
+        flow = torch.zeros_like(x[:, :4]).to(device)
+        mask = torch.zeros_like(x[:, :1]).to(device)
+        ada_scale = scale_list.copy()
+        if ada_scale:
+            flow_test, _ = self.block0(torch.cat((img0[:, :3], img1[:, :3], mask), 1), flow, scale=ada_scale[0] * 2)
+            if flow_test.abs().max() > ada_scale[0] * 16:
+                for i in range(3):
+                    ada_scale[i] = ada_scale[i] * 2
         loss_cons = 0
         block = [self.block0, self.block1, self.block2]
         for i in range(3):
-            f0, m0 = block[i](torch.cat((warped_img0[:, :3], warped_img1[:, :3], mask), 1), flow, scale=scale_list[i])
-            f1, m1 = block[i](torch.cat((warped_img1[:, :3], warped_img0[:, :3], -mask), 1), torch.cat((flow[:, 2:4], flow[:, :2]), 1), scale=scale_list[i])
-            flow = flow + (f0 + torch.cat((f1[:, 2:4], f1[:, :2]), 1)) / 2
-            mask = mask + (m0 + (-m1)) / 2
+            f0, m0 = block[i](torch.cat((warped_img0[:, :3], warped_img1[:, :3], mask), 1), flow, scale=ada_scale[i])
+            if ensemble:
+            	f1, m1 = block[i](torch.cat((warped_img1[:, :3], warped_img0[:, :3], -mask), 1), torch.cat((flow[:, 2:4], flow[:, :2]), 1), scale=ada_scale[i])
+            	f0 = (f0 + torch.cat((f1[:, 2:4], f1[:, :2]), 1)) / 2
+            	m0 = (m0 + (-m1)) / 2
+            flow = flow + f0
+            mask = mask + m0
             mask_list.append(mask)
             flow_list.append(flow)
             warped_img0 = warp(img0, flow[:, :2])
@@ -108,8 +116,6 @@ class IFNet(nn.Module):
         tmp = self.unet(img0, img1, warped_img0, warped_img1, mask, flow, c0, c1)
         res = tmp[:, 1:4] * 2 - 1
         '''
-        for i in range(3):
-            mask_list[i] = torch.sigmoid(mask_list[i])
-            merged[i] = merged[i][0] * mask_list[i] + merged[i][1] * (1 - mask_list[i])
-            # merged[i] = torch.clamp(merged[i] + res, 0, 1)        
+        mask_list[2] = torch.sigmoid(mask_list[2])
+        merged[2] = merged[2][0] * mask_list[2] + merged[2][1] * (1 - mask_list[2])
         return flow_list, mask_list[2], merged
