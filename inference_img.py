@@ -3,7 +3,6 @@ import cv2
 import torch
 import argparse
 from torch.nn import functional as F
-from model.RIFE_HDv2 import Model
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -19,10 +18,26 @@ parser.add_argument('--exp', default=4, type=int)
 parser.add_argument('--ratio', default=0, type=float, help='inference ratio between two images with 0 - 1 range')
 parser.add_argument('--rthreshold', default=0.02, type=float, help='returns image when actual ratio falls in given range threshold')
 parser.add_argument('--rmaxcycles', default=8, type=int, help='limit max number of bisectional cycles')
+parser.add_argument('--model', dest='modelDir', type=str, default='train_log', help='directory with trained model files')
+
 args = parser.parse_args()
 
-model = Model()
-model.load_model(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'train_log'), -1)
+try:
+    try:
+        from model.RIFE_HDv2 import Model
+        model = Model()
+        model.load_model(args.modelDir, -1)
+        print("Loaded v2.x HD model.")
+    except:
+        from train_log.RIFE_HDv3 import Model
+        model = Model()
+        model.load_model(args.modelDir, -1)
+        print("Loaded v3.x HD model.")
+except:
+    from model.RIFE_HD import Model
+    model = Model()
+    model.load_model(args.modelDir, -1)
+    print("Loaded v1.x HD model")
 model.eval()
 model.device()
 
@@ -33,8 +48,8 @@ if args.img[0].endswith('.exr') and args.img[1].endswith('.exr'):
     img1 = (torch.tensor(img1.transpose(2, 0, 1)).to(device)).unsqueeze(0)
 
 else:
-    img0 = cv2.imread(args.img[0])
-    img1 = cv2.imread(args.img[1])
+    img0 = cv2.imread(args.img[0], cv2.IMREAD_UNCHANGED)
+    img1 = cv2.imread(args.img[1], cv2.IMREAD_UNCHANGED)
     img0 = (torch.tensor(img0.transpose(2, 0, 1)).to(device) / 255.).unsqueeze(0)
     img1 = (torch.tensor(img1.transpose(2, 0, 1)).to(device) / 255.).unsqueeze(0)
 

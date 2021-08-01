@@ -16,19 +16,22 @@ model.load_model('train_log')
 model.eval()
 model.device()
 
-path = 'UCF101/ucf101_interp_ours/'
+path = 'datasets/test_2k_540p/'
 dirs = os.listdir(path)
 psnr_list = []
 ssim_list = []
 print(len(dirs))
 for d in dirs:
-    img0 = (path + d + '/frame_00.png')
-    img1 = (path + d + '/frame_02.png')
-    gt = (path + d + '/frame_01_gt.png')
+    img0 = (path + d + '/frame1.png')
+    img1 = (path + d + '/frame3.png')
+    gt = (path + d + '/frame2.png')
     img0 = (torch.tensor(cv2.imread(img0).transpose(2, 0, 1) / 255.)).to(device).float().unsqueeze(0)
     img1 = (torch.tensor(cv2.imread(img1).transpose(2, 0, 1) / 255.)).to(device).float().unsqueeze(0)
     gt = (torch.tensor(cv2.imread(gt).transpose(2, 0, 1) / 255.)).to(device).float().unsqueeze(0)
-    pred = model.inference(img0, img1)[0]
+    pader = torch.nn.ReplicationPad2d([0, 0, 2, 2])
+    img0 = pader(img0)
+    img1 = pader(img1)
+    pred = model.inference(img0, img1)[0][:, 2:-2]
     ssim = ssim_matlab(gt, torch.round(pred * 255).unsqueeze(0) / 255.).detach().cpu().numpy()
     out = pred.detach().cpu().numpy().transpose(1, 2, 0)
     out = np.round(out * 255) / 255.

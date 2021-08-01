@@ -1,4 +1,4 @@
-# RIFE v2.4 - Real Time Video Interpolation
+# RIFE - Real Time Video Interpolation
 ## [arXiv](https://arxiv.org/abs/2011.06294) | [YouTube](https://www.youtube.com/watch?v=60DX2T3zyVo&feature=youtu.be) | [Colab](https://colab.research.google.com/github/hzwer/arXiv2020-RIFE/blob/main/Colab_demo.ipynb) | [Tutorial](https://www.youtube.com/watch?v=gf_on-dbwyU&feature=emb_title) | [Demo](https://www.youtube.com/watch?v=oFnyq-e_b3g)
 
 ## Table of Contents
@@ -13,37 +13,19 @@
 
 
 ## Introduction
+This project is the implement of [RIFE: Real-Time Intermediate Flow Estimation for Video Frame Interpolation](https://arxiv.org/abs/2011.06294). If you are a developer, welcome to follow [Practical-RIFE](https://github.com/hzwer/Practical-RIFE), which aims to make RIFE more practical for users by adding various features and design new models.
 
-2021.3.9 News: We have updated our arXiv paper and fixed most of the defects.
-
-2021.2.9 News: We have updated the RIFEv2 model, faster and much better! Please check our [Update Log](https://github.com/hzwer/arXiv2020-RIFE/issues/41#issuecomment-737651979).
-
-Our model can run 30+FPS for 2X 720p interpolation on a 2080Ti GPU. Currently, our method supports 2X,4X,8X... interpolation, and multi-frame interpolation between a pair of images. Everyone is welcome to use our alpha version and make suggestions!
+Currently, our model can run 30+FPS for 2X 720p interpolation on a 2080Ti GPU. It supports 2X,4X,8X... interpolation, and multi-frame interpolation between a pair of images. 
 
 16X interpolation results from two input images: 
 
 ![Demo](./demo/I0_slomo_clipped.gif)
 ![Demo](./demo/I2_slomo_clipped.gif)
 
-## Collection
-**Software**
-[Squirrel-RIFE(中文软件)](https://github.com/YiWeiHuang-stack/Squirrel-Video-Frame-Interpolation) | [Waifu2x-Extension-GUI](https://github.com/AaronFeng753/Waifu2x-Extension-GUI) | [Flowframes](https://nmkd.itch.io/flowframes) | [RIFE-ncnn-vulkan](https://github.com/nihui/rife-ncnn-vulkan) | [RIFE-App(Paid)](https://grisk.itch.io/rife-app) | [Autodesk Flame](https://vimeo.com/505942142) |
+## Software
+[Squirrel-RIFE(中文软件)](https://github.com/YiWeiHuang-stack/Squirrel-Video-Frame-Interpolation) | [Waifu2x-Extension-GUI](https://github.com/AaronFeng753/Waifu2x-Extension-GUI) | [Flowframes](https://nmkd.itch.io/flowframes) | [RIFE-ncnn-vulkan](https://github.com/nihui/rife-ncnn-vulkan) | [RIFE-App(Paid)](https://grisk.itch.io/rife-app) | [Autodesk Flame](https://vimeo.com/505942142) | [SVP](https://www.svp-team.com/wiki/RIFE_AI_interpolation) |
 
-**2d Animation**
-[DAIN-App vs RIFE-App](https://www.youtube.com/watch?v=0OXzVGLRhK0) | [Chika Dance](https://www.youtube.com/watch?v=yjMYefRXikI) | [御坂大哥想让我表白 - 魔女之旅](https://www.bilibili.com/video/BV1r54y1Y7fn) | [ablyh - 超电磁炮](https://www.bilibili.com/video/BV1gK4y1Q7d9?from=search&seid=16584204362417247463) [超电磁炮.b](https://www.bilibili.com/video/BV1sp4y1p73K?from=search&seid=7774996509988438677) | [赫萝与罗伦斯的旅途 - 绫波丽](https://www.bilibili.com/video/BV1yz4y1m7iF) | [花儿不哭 - 乐正绫](https://www.bilibili.com/video/BV1cs411b7qL?from=search&seid=11977379973861203602) |
-
-[没有鼠鼠的雏子Official - 千恋万花](https://www.bilibili.com/video/BV1AT4y1P7kY?from=search&seid=15458655842150253738) | [晨曦光晖 - 从零开始的异世界生活](https://www.bilibili.com/video/BV1QV411i7B4?from=search&seid=151780224584608151) | [琴乃乃 - 天才麻将少女](https://www.bilibili.com/video/BV1Qz4y1y7tH) |
-
-**3d Animation**
-[没有鼠鼠的雏子Official - 原神](https://www.bilibili.com/video/BV1iU4y1s7Lk) | [今天我练出腹肌了吗 - 最终幻想](https://www.bilibili.com/video/BV1R541177qr) [仙剑奇侠传](https://www.bilibili.com/video/BV14p4y1s7na) | [娜不列颠 - 冰雪奇缘](https://www.bilibili.com/video/BV1fy4y1J7Mu) | 
-
-**MV and Film**
-[Navetek - 邓丽君](https://www.bilibili.com/video/BV1ZK411u7CM) | [生米阿怪 - 周深](https://www.bilibili.com/video/BV1cp4y1W717) | [EzioAuditoreDFirenZe - 中森明菜](https://www.bilibili.com/video/BV1cs411b7qL?from=search&seid=11977379973861203602) | [Life in a Day 2020](https://www.youtube.com/user/lifeinaday) |
-
-**MMD**
-[深邃黑暗の银鳕鱼 - 镜音铃](https://www.bilibili.com/video/BV1nU4y1W7RF?from=search&seid=151780224584608151) [fufu](https://www.bilibili.com/video/BV16K4y1Q7CM) [fufu.b](https://www.bilibili.com/video/BV1Xb4y1R7iT) | [Abism0 - 弱音](https://www.bilibili.com/video/BV1Wf4y147cP?from=search&seid=7774996509988438677) |
-
-## Usage
+## CLI Usage
 
 ### Installation
 
@@ -53,9 +35,11 @@ cd arXiv2020-RIFE
 pip3 install -r requirements.txt
 ```
 
-* Download the pretrained **HDv2** models from [here](https://drive.google.com/file/d/1wsQIhHZ3Eg4_AfCXItFKqqyDMB4NS0Yd/view?usp=sharing). (百度网盘链接:https://pan.baidu.com/s/1EvQCA8Y7LuDe9KE6XICpXA 密码:xm3z，把压缩包解开后放在 train_log/\*.pkl)
+* Download the pretrained **HD** models from [here](https://drive.google.com/file/d/1APIzVeI-4ZZCEuIRE1m6WYfSCaOsi_7_/view?usp=sharing). (百度网盘链接:https://pan.baidu.com/share/init?surl=u6Q7-i4Hu4Vx9_5BJibPPA 密码:hfk3，把压缩包解开后放在 train_log/\*)
 
-* Unzip and move the pretrained parameters to train_log/\*.pkl
+* Unzip and move the pretrained parameters to train_log/\*
+
+* This model is not reported by our paper, for our paper model please refer to [evaluation](https://github.com/hzwer/arXiv2020-RIFE#evaluation).
 
 ### Run
 
@@ -126,7 +110,7 @@ docker run --rm -it --gpus all -v /dev/dri:/dev/dri -v $PWD:/host rife:latest in
 ```
 
 ## Evaluation
-Download [RIFE model](https://drive.google.com/file/d/1U2AGFY00hafsPmm94-6deeM-9feGN-qg/view?usp=sharing) reported by our paper.
+Download [RIFE model](https://drive.google.com/file/d/1U2AGFY00hafsPmm94-6deeM-9feGN-qg/view?usp=sharing) or [RIFE-Large model](https://drive.google.com/file/d/1khrpNkbrACYk3YVfHuRDJS5iUDSN7vFw/view?usp=sharing) reported by our paper.
 
 **UCF101**: Download [UCF101 dataset](https://liuziwei7.github.io/projects/VoxelFlow) at ./UCF101/ucf101_interp_ours/
 
@@ -136,6 +120,7 @@ Download [RIFE model](https://drive.google.com/file/d/1U2AGFY00hafsPmm94-6deeM-9
 
 **HD**: Download [HD dataset](https://github.com/baowenbo/MEMC-Net) at ./HD_dataset. We also provide a [google drive download link](https://drive.google.com/file/d/1iHaLoR2g1-FLgr9MEv51NH_KQYMYz-FA/view?usp=sharing).
 ```
+# RIFE
 python3 benchmark/UCF101.py
 # "PSNR: 35.246 SSIM: 0.9691"
 python3 benchmark/Vimeo90K.py
@@ -155,7 +140,7 @@ Each sample includes images (I0 I1 Imid : 9 x 256 x 448), and optical flow (flow
 
 For origin images, you can download them from [Vimeo90K dataset](http://toflow.csail.mit.edu/).
 
-For generating optical flow labels, our paper use [pytorch-liteflownet](https://github.com/sniklaus/pytorch-liteflownet). In our trainning, we use the optical flow labels generated on 2X size images using official released model. You can also generate labels during training, or [finetune the optical flow network](https://github.com/hzwer/arXiv2020-RIFE/issues/99#issuecomment-798231465) on your training set. 
+For generating optical flow labels, our paper use [pytorch-liteflownet](https://github.com/sniklaus/pytorch-liteflownet). Please notice that due to the data augmentation during training, generating optical flow labels during training may cause performance loss. We recommend that readers use RAFT to generate optical flow labels because it is easier to deploy. As long as the generated labels are correct, our method is not sensitive to the teacher model. Because the teacher can see the intermediate frame, the quality of the generated optical flow is much higher than that of the student.
 
 We use 16 CPUs, 4 GPUs and 20G memory for training: 
 ```

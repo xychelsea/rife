@@ -9,7 +9,7 @@ import warnings
 import _thread
 import skvideo.io
 from queue import Queue, Empty
-from benchmark.pytorch_msssim import ssim_matlab
+from model.pytorch_msssim import ssim_matlab
 
 warnings.filterwarnings("ignore")
 
@@ -91,10 +91,16 @@ if args.cuda:
         torch.set_default_tensor_type(torch.cuda.HalfTensor)
 
 try:
-    from model.RIFE_HDv2 import Model
-    model = Model()
-    model.load_model(args.modelDir, -1)
-    print("Loaded v2.x HD model.")
+    try:
+        from model.RIFE_HDv2 import Model
+        model = Model()
+        model.load_model(args.modelDir, -1)
+        print("Loaded v2.x HD model.")
+    except:
+        from train_log.RIFE_HDv3 import Model
+        model = Model()
+        model.load_model(args.modelDir, -1)
+        print("Loaded v3.x HD model.")
 except:
     from model.RIFE_HD import Model
     model = Model()
@@ -129,7 +135,7 @@ else:
             videogen.append(f)
     tot_frame = len(videogen)
     videogen.sort(key= lambda x:int(x[:-4]))
-    lastframe = cv2.imread(os.path.join(args.img, videogen[0]))[:, :, ::-1].copy()
+    lastframe = cv2.imread(os.path.join(args.img, videogen[0]), cv2.IMREAD_UNCHANGED)[:, :, ::-1].copy()
     videogen = videogen[1:]
 h, w, _ = lastframe.shape
 vid_out_name = None
@@ -214,7 +220,7 @@ while True:
     I1 = pad_image(I1)
     I0_small = F.interpolate(I0, (32, 32), mode='bilinear', align_corners=False)
     I1_small = F.interpolate(I1, (32, 32), mode='bilinear', align_corners=False)
-    ssim = ssim_matlab(I0_small, I1_small)
+    ssim = ssim_matlab(I0_small[:, :3], I1_small[:, :3])
 
     if ssim > 0.995:
         if skip_frame % 100 == 0:
@@ -224,7 +230,11 @@ while True:
             pbar.update(1)
             continue
 
-    if ssim < 0.5:
+    if ssim < 0.2:
+        output = []
+        for i in range((2 ** args.exp) - 1):
+            output.append(I0)
+        '''
         output = []
         step = 1 / (2 ** args.exp)
         alpha = 0
@@ -232,6 +242,7 @@ while True:
             alpha += step
             beta = 1-alpha
             output.append(torch.from_numpy(np.transpose((cv2.addWeighted(frame[:, :, ::-1], alpha, lastframe[:, :, ::-1], beta, 0)[:, :, ::-1].copy()), (2,0,1))).to(device, non_blocking=True).unsqueeze(0).float() / 255.)
+        '''
     else:
         output = make_inference(I0, I1, 2**args.exp-1) if args.exp else []
 
