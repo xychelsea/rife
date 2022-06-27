@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from model.warplayer import warp
-from model.refine import *
+from model.refine_2R import *
 
 def deconv(in_planes, out_planes, kernel_size=4, stride=2, padding=1):
     return nn.Sequential(
@@ -21,7 +21,7 @@ class IFBlock(nn.Module):
     def __init__(self, in_planes, c=64):
         super(IFBlock, self).__init__()
         self.conv0 = nn.Sequential(
-            conv(in_planes, c//2, 3, 2, 1),
+            conv(in_planes, c//2, 3, 1, 1),
             conv(c//2, c, 3, 2, 1),
             )
         self.convblock = nn.Sequential(
@@ -45,8 +45,8 @@ class IFBlock(nn.Module):
         x = self.conv0(x)
         x = self.convblock(x) + x
         tmp = self.lastconv(x)
-        tmp = F.interpolate(tmp, scale_factor = scale * 2, mode="bilinear", align_corners=False)
-        flow = tmp[:, :4] * scale * 2
+        tmp = F.interpolate(tmp, scale_factor = scale, mode="bilinear", align_corners=False)
+        flow = tmp[:, :4] * scale
         mask = tmp[:, 4:5]
         return flow, mask
     

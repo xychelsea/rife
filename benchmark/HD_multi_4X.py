@@ -13,8 +13,8 @@ from skimage.color import rgb2yuv, yuv2rgb
 from yuv_frame_io import YUV_Read,YUV_Write
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = Model()
-model.load_model('train_log')
+model = Model(arbitrary=True)
+model.load_model('RIFE_m_train_log')
 model.eval()
 model.device()
 
@@ -31,14 +31,21 @@ name_list = [
     ('HD_dataset/HD544p_GT/Sintel_Temple1_1280x544.yuv', 544, 1280),
     ('HD_dataset/HD544p_GT/Sintel_Temple2_1280x544.yuv', 544, 1280),
 ]
-def inference(I0, I1, pad, multi=3):
+def inference(I0, I1, pad, multi=2, arbitrary=True):
     img = [I0, I1]
-    for i in range(multi):
-        res = [I0]
-        for j in range(len(img) - 1):
-            res.append(model.inference(img[j], img[j + 1]))
-            res.append(img[j + 1])
-        img = res
+    if not arbitrary:
+        for i in range(multi):
+            res = [I0]
+            for j in range(len(img) - 1):
+                res.append(model.inference(img[j], img[j + 1]))
+                res.append(img[j + 1])
+            img = res
+    else:
+        img = [I0]
+        p = 2**multi
+        for i in range(p-1):
+            img.append(model.inference(I0, I1, timestep=(i+1)*(1./p)))
+        img.append(I1)
     for i in range(len(img)):
         img[i] = img[i][0][:, pad: -pad]
     return img[1: -1]
@@ -56,14 +63,14 @@ for data in name_list:
     _, lastframe = Reader.read()
     # fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
     # video = cv2.VideoWriter(name + '.mp4', fourcc, 30, (w, h))    
-    for index in range(0, 100, 8):
+    for index in range(0, 100, 4):
         gt = []
         if 'yuv' in name:
             IMAGE1, success1 = Reader.read(index)
-            IMAGE2, success2 = Reader.read(index + 8)
+            IMAGE2, success2 = Reader.read(index + 4)
             if not success2:
                 break
-            for i in range(1, 8):
+            for i in range(1, 4):
                 tmp, _ = Reader.read(index + i)
                 gt.append(tmp)
         else:
@@ -82,7 +89,7 @@ for data in name_list:
         I1 = pader(I1)
         with torch.no_grad():
             pred = inference(I0, I1, pad)
-        for i in range(8 - 1):
+        for i in range(4 - 1):
             out = (np.round(pred[i].detach().cpu().numpy().transpose(1, 2, 0) * 255)).astype('uint8')
             if 'yuv' in name:
                 diff_rgb = 128.0 + rgb2yuv(gt[i] / 255.)[:, :, 0] * 255 - rgb2yuv(out / 255.)[:, :, 0] * 255

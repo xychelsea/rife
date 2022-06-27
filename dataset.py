@@ -1,3 +1,4 @@
+import os
 import cv2
 import ast
 import torch
@@ -10,57 +11,66 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class VimeoDataset(Dataset):
     def __init__(self, dataset_name, batch_size=32):
         self.batch_size = batch_size
-        self.path = './dataset/'
-        self.dataset_name = dataset_name
-        self.load_data()
+        self.dataset_name = dataset_name        
         self.h = 256
         self.w = 448
-        xx = np.arange(0, self.w).reshape(1,-1).repeat(self.h,0)
-        yy = np.arange(0, self.h).reshape(-1,1).repeat(self.w,1)
-        self.grid = np.stack((xx,yy),2).copy()
+        self.data_root = 'vimeo_triplet'
+        self.image_root = os.path.join(self.data_root, 'sequences')
+        train_fn = os.path.join(self.data_root, 'tri_trainlist.txt')
+        test_fn = os.path.join(self.data_root, 'tri_testlist.txt')
+        with open(train_fn, 'r') as f:
+            self.trainlist = f.read().splitlines()
+        with open(test_fn, 'r') as f:
+            self.testlist = f.read().splitlines()   
+        self.load_data()
 
     def __len__(self):
         return len(self.meta_data)
 
     def load_data(self):
-        self.train_data = []
-        self.flow_data = []
-        self.val_data = []
-        for i in range(100):
-            f = np.load('dataset/{}.npz'.format(i))
-            if i < 80:
-                self.train_data.append(f['i0i1gt'])
-                self.flow_data.append(f['ft0ft1'])
-            else:
-                self.val_data.append(f['i0i1gt'])
+        cnt = int(len(self.trainlist) * 0.95)
         if self.dataset_name == 'train':
-            self.meta_data = self.train_data
+            self.meta_data = self.trainlist[:cnt]
+        elif self.dataset_name == 'test':
+            self.meta_data = self.testlist
         else:
-            self.meta_data = self.val_data
-        self.nr_sample = len(self.meta_data)        
-
-    def aug(self, img0, gt, img1, flow_gt, h, w):
+            self.meta_data = self.trainlist[cnt:]
+           
+    def crop(self, img0, gt, img1, h, w):
         ih, iw, _ = img0.shape
         x = np.random.randint(0, ih - h + 1)
         y = np.random.randint(0, iw - w + 1)
         img0 = img0[x:x+h, y:y+w, :]
         img1 = img1[x:x+h, y:y+w, :]
         gt = gt[x:x+h, y:y+w, :]
-        flow_gt = flow_gt[x:x+h, y:y+w, :]
-        return img0, gt, img1, flow_gt
+        return img0, gt, img1
 
     def getimg(self, index):
-        data = self.meta_data[index]
-        img0 = data[0:3].transpose(1, 2, 0)
-        img1 = data[3:6].transpose(1, 2, 0)
-        gt = data[6:9].transpose(1, 2, 0)
-        flow_gt = (self.flow_data[index]).transpose(1, 2, 0)
-        return img0, gt, img1, flow_gt
+        imgpath = os.path.join(self.image_root, self.meta_data[index])
+        imgpaths = [imgpath + '/im1.png', imgpath + '/im2.png', imgpath + '/im3.png']
+
+        # Load images
+        img0 = cv2.imread(imgpaths[0])
+        gt = cv2.imread(imgpaths[1])
+        img1 = cv2.imread(imgpaths[2])
+        timestep = 0.5
+        return img0, gt, img1, timestep
+    
+        # RIFEm with Vimeo-Septuplet
+        # imgpaths = [imgpath + '/im1.png', imgpath + '/im2.png', imgpath + '/im3.png', imgpath + '/im4.png', imgpath + '/im5.png', imgpath + '/im6.png', imgpath + '/im7.png']
+        # ind = [0, 1, 2, 3, 4, 5, 6]
+        # random.shuffle(ind)
+        # ind = ind[:3]
+        # ind.sort()
+        # img0 = cv2.imread(imgpaths[ind[0]])
+        # gt = cv2.imread(imgpaths[ind[1]])
+        # img1 = cv2.imread(imgpaths[ind[2]])        
+        # timestep = (ind[1] - ind[0]) * 1.0 / (ind[2] - ind[0] + 1e-6)
             
     def __getitem__(self, index):        
-        img0, gt, img1, flow_gt = self.getimg(index)
+        img0, gt, img1, timestep = self.getimg(index)
         if self.dataset_name == 'train':
-            img0, gt, img1, flow_gt = self.aug(img0, gt, img1, flow_gt, 224, 224)
+            img0, gt, img1 = self.crop(img0, gt, img1, 224, 224)
             if random.uniform(0, 1) < 0.5:
                 img0 = img0[:, :, ::-1]
                 img1 = img1[:, :, ::-1]
@@ -69,23 +79,31 @@ class VimeoDataset(Dataset):
                 img0 = img0[::-1]
                 img1 = img1[::-1]
                 gt = gt[::-1]
-                flow_gt = flow_gt[::-1]
-                flow_gt = np.concatenate((flow_gt[:, :, 0:1], -flow_gt[:, :, 1:2], flow_gt[:, :, 2:3], -flow_gt[:, :, 3:4]), 2)
             if random.uniform(0, 1) < 0.5:
                 img0 = img0[:, ::-1]
                 img1 = img1[:, ::-1]
                 gt = gt[:, ::-1]
-                flow_gt = flow_gt[:, ::-1]
-                flow_gt = np.concatenate((-flow_gt[:, :, 0:1], flow_gt[:, :, 1:2], -flow_gt[:, :, 2:3], flow_gt[:, :, 3:4]), 2)
             if random.uniform(0, 1) < 0.5:
                 tmp = img1
                 img1 = img0
                 img0 = tmp
-                flow_gt = np.concatenate((flow_gt[:, :, 2:4], flow_gt[:, :, 0:2]), 2)
-        else:
-            flow_gt = np.zeros((256, 448, 4))
-        flow_gt = torch.from_numpy(flow_gt.copy()).permute(2, 0, 1)
+                timestep = 1 - timestep
+            # random rotation
+            p = random.uniform(0, 1)
+            if p < 0.25:
+                img0 = cv2.rotate(img0, cv2.ROTATE_90_CLOCKWISE)
+                gt = cv2.rotate(gt, cv2.ROTATE_90_CLOCKWISE)
+                img1 = cv2.rotate(img1, cv2.ROTATE_90_CLOCKWISE)
+            elif p < 0.5:
+                img0 = cv2.rotate(img0, cv2.ROTATE_180)
+                gt = cv2.rotate(gt, cv2.ROTATE_180)
+                img1 = cv2.rotate(img1, cv2.ROTATE_180)
+            elif p < 0.75:
+                img0 = cv2.rotate(img0, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                gt = cv2.rotate(gt, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                img1 = cv2.rotate(img1, cv2.ROTATE_90_COUNTERCLOCKWISE)
         img0 = torch.from_numpy(img0.copy()).permute(2, 0, 1)
         img1 = torch.from_numpy(img1.copy()).permute(2, 0, 1)
         gt = torch.from_numpy(gt.copy()).permute(2, 0, 1)
-        return torch.cat((img0, img1, gt), 0), flow_gt
+        timestep = torch.tensor(timestep).reshape(1, 1, 1)
+        return torch.cat((img0, img1, gt), 0), timestep
